@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────
+# ManualCTRL Printer Configuration
+# Only settings that this software uses at runtime.
+# Pin definitions, drivers, PID, etc. live in the firmware.
+# ─────────────────────────────────────────────────────────────
+
+# ── Serial Connection ───────────────────────────────────────
+serial:
+  port: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_53003B000F504D5930313820-if00
+  baud_rate: 115200
+
+# ── Machine Limits (used to clamp feed rates) ──────────────
+machine:
+  max_velocity: 200            # mm/s
+  max_accel: 1000              # mm/s²
+  max_z_velocity: 10           # mm/s
+  max_z_accel: 50              # mm/s²
+  z_max: 155                   # mm — max Z travel
+
+# ── Bed Rotation (informational + feed clamping) ───────────
+bed:
+  gear_ratio: "80:20"          # 4:1 reduction — 4 motor revs = 360° bed
+  rotation_distance: 90        # degrees per motor revolution
+
+# ── Extruder (used for flow & cross-section calculations) ──
+extruder:
+  nozzle_diameter: 1.8         # mm
+  filament_diameter: 1.8       # mm
+  rotation_distance: 4.637     # mm filament per motor revolution (Orbiter 2.0)
+  max_extrude_cross_section: 15.0  # mm²
+  max_extrude_only_velocity: 120   # mm/s
+  max_extrude_only_distance: 100   # mm
+  max_temp: 250                # °C — UI input limit
+
+# ── Homing Sequence ────────────────────────────────────────
+homing:
+  z_lift_before_home: 5.0      # mm — lift Z before homing
+  z_rest_after_home: 10.0      # mm — Z park position after homing
+
+# ── Manual Control Defaults ────────────────────────────────
+motion:
+  y_feedrate: 2700             # deg/min — bed rotation speed
+  y_step: 1.0                  # degrees per tick
+  e_feedrate: 300              # mm/min — extrusion speed
+  e_step: 0.5                  # mm per tick
+  z_feedrate: 600              # mm/min — Z axis speed
+  z_step: 0.1                  # mm per tick
+  tick_hz: 15                  # multiplexer loop rate
+
+# ── G-code Macros ──────────────────────────────────────────
+macros:
+  startup_gcode: |
+    MANUAL_STEPPER STEPPER=z SET_POSITION=0 MOVE=5 SPEED=10
+    MANUAL_STEPPER STEPPER=z SET_POSITION=155 MOVE=0 STOP_ON_ENDSTOP=1 SPEED=5
+    MANUAL_STEPPER STEPPER=z SET_POSITION=0
+    MANUAL_STEPPER STEPPER=z MOVE=10 SPEED=10
+    M117 ManualCTRL ready
+  shutdown_gcode: |
+    M104 S0
+    M107
+    MANUAL_STEPPER STEPPER=bed ENABLE=0
+    MANUAL_STEPPER STEPPER=z ENABLE=0
+    M18

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManualCTRL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <header id="topbar">
+    <div class="topbar-left">
+      <span class="logo">ManualCTRL</span>
+      <nav class="nav-tabs">
+        <a href="#" class="nav-tab active" data-page="control">Control</a>
+        <a href="#" class="nav-tab" data-page="config">Configuration</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span id="conn-dot" class="dot offline"></span>
+      <span id="conn-label">Disconnected</span>
+      <button id="btn-connect" class="btn-sm">Connect</button>
+      <button id="btn-disconnect" class="btn-sm" disabled>Disconnect</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════ CONTROL PAGE ═══════════════ -->
+  <main id="page-control" class="page active">
+
+    <section class="status-strip">
+      <div class="stat">
+        <span class="stat-label">Hotend</span>
+        <span class="stat-value"><span id="hotend-temp">--</span> / <span id="hotend-target">0</span>&deg;C</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Bed Angle</span>
+        <span class="stat-value"><span id="pos-y">0</span>&deg;</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Z Height</span>
+        <span class="stat-value"><span id="pos-z">0</span> mm</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Extruder</span>
+        <span class="stat-value"><span id="pos-e">0</span> mm</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Flow</span>
+        <span class="stat-value"><span id="vol-flow">0</span> mm&sup3;/s</span>
+      </div>
+    </section>
+
+    <section class="kin-bar" id="kin-bar">
+      <span class="kin-chip">Bed gear <span id="kin-gear">--</span>:1</span>
+      <span class="kin-chip">Nozzle <span id="kin-nozzle">--</span> mm</span>
+      <span class="kin-chip">Filament <span id="kin-filament">--</span> mm</span>
+      <span class="kin-chip">Z max <span id="kin-zmax">--</span> mm</span>
+      <span class="kin-chip">Max vol <span id="kin-max-vol">--</span> mm&sup3;/s</span>
+    </section>
+
+    <div class="grid">
+
+      <!-- Bed & Extruder Motion -->
+      <section class="card">
+        <h2>Bed &amp; Extruder</h2>
+        <p class="hint">Hold to move continuously. Release to stop.</p>
+        <div class="motion-grid">
+          <button class="motion-btn spin-pos" data-action="spin_y_pos">
+            <span class="motion-icon">&#8635;</span>
+            Spin +
+          </button>
+          <button class="motion-btn spin-neg" data-action="spin_y_neg">
+            <span class="motion-icon">&#8634;</span>
+            Spin &minus;
+          </button>
+          <button class="motion-btn ext-pos" data-action="extrude_pos">
+            <span class="motion-icon">&#9660;</span>
+            Extrude
+          </button>
+          <button class="motion-btn ext-neg" data-action="extrude_neg">
+            <span class="motion-icon">&#9650;</span>
+            Retract
+          </button>
+        </div>
+      </section>
+
+      <!-- Z Axis Motion -->
+      <section class="card">
+        <h2>Z Axis</h2>
+        <p class="hint">Leadscrew 4 mm/rev &middot; Max 155 mm</p>
+        <div class="motion-grid">
+          <button class="motion-btn z-pos" data-action="move_z_pos">
+            <span class="motion-icon">&#9650;</span>
+            Z Up
+          </button>
+          <button class="motion-btn z-neg" data-action="move_z_neg">
+            <span class="motion-icon">&#9660;</span>
+            Z Down
+          </button>
+        </div>
+      </section>
+
+      <!-- Temperature -->
+      <section class="card">
+        <h2>Temperature</h2>
+        <div class="control-row">
+          <label>Hotend &deg;C</label>
+          <input type="number" id="input-hotend" min="0" max="300" value="0" />
+          <button class="btn" id="btn-set-hotend">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Fan (0 &ndash; 255)</label>
+          <input type="number" id="input-fan" min="0" max="255" value="0" />
+          <button class="btn" id="btn-set-fan">Set</button>
+        </div>
+      </section>
+
+      <!-- Feed & Step -->
+      <section class="card">
+        <h2>Feed &amp; Step Size</h2>
+        <div class="control-row">
+          <label>Bed (deg/min)</label>
+          <input type="number" id="input-yfeed" min="10" max="10000" value="2700" />
+          <button class="btn" id="btn-set-yfeed">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Bed step (deg)</label>
+          <input type="number" id="input-ystep" min="0.1" max="30" step="0.1" value="1" />
+          <button class="btn" id="btn-set-ystep">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Ext (mm/min)</label>
+          <input type="number" id="input-efeed" min="1" max="7200" value="300" />
+          <button class="btn" id="btn-set-efeed">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Ext step (mm)</label>
+          <input type="number" id="input-estep" min="0.01" max="10" step="0.01" value="0.5" />
+          <button class="btn" id="btn-set-estep">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Z (mm/min)</label>
+          <input type="number" id="input-zfeed" min="1" max="600" value="600" />
+          <button class="btn" id="btn-set-zfeed">Set</button>
+        </div>
+        <div class="control-row">
+          <label>Z step (mm)</label>
+          <input type="number" id="input-zstep" min="0.01" max="5" step="0.01" value="0.1" />
+          <button class="btn" id="btn-set-zstep">Set</button>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <section class="card card-wide">
+        <div class="motion-secondary">
+          <button class="btn btn-outline" id="btn-home">Home Z</button>
+          <button class="btn btn-danger" id="btn-estop">EMERGENCY STOP</button>
+        </div>
+      </section>
+
+      <!-- G-code Logger -->
+      <section class="card card-wide">
+        <h2>G-code Logger</h2>
+        <div class="logger-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-logging" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="log-status" class="log-status">Logging off</span>
+          <button class="btn btn-sm" id="btn-log-download" style="display:none">Download</button>
+          <button class="btn-sm" id="btn-log-browse">Browse Logs</button>
+        </div>
+        <div id="log-browser" class="log-browser" style="display:none">
+          <div id="log-list" class="log-list"></div>
+        </div>
+      </section>
+
+      <!-- G-code Console -->
+      <section class="card card-wide">
+        <h2>Console</h2>
+        <div class="console-row">
+          <input type="text" id="gcode-input" placeholder="Enter G-code command..." />
+          <button class="btn" id="btn-send-gcode">Send</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════ CONFIG PAGE ═══════════════ -->
+  <main id="page-config" class="page">
+    <div class="config-header">
+      <h1>Printer Configuration</h1>
+      <p class="hint">Serial, machine limits, extruder, homing, and motion defaults. Saved to <code>printer.cfg</code></p>
+      <div class="config-toolbar">
+        <div class="config-mode-toggle">
+          <button class="btn btn-sm config-mode-btn active" data-mode="form">Structured</button>
+          <button class="btn btn-sm config-mode-btn" data-mode="raw">Raw YAML</button>
+        </div>
+        <div class="config-actions">
+          <button class="btn" id="btn-config-save" disabled>Save &amp; Apply</button>
+          <button class="btn" id="btn-config-restart">Save &amp; Restart</button>
+          <button class="btn btn-danger btn-sm" id="btn-config-reset">Reset Defaults</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="config-form" class="config-view active">
+      <div class="config-loading">Loading configuration...</div>
+    </div>
+
+    <div id="config-raw" class="config-view">
+      <textarea id="config-yaml-editor" spellcheck="false" placeholder="Loading..."></textarea>
+    </div>
+
+    <div id="config-toast" class="toast hidden"></div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
