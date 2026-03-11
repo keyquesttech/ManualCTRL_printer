@@ -6,7 +6,7 @@
 #
 set -euo pipefail
 
-REPO_URL="https://github.com/YOUR_USER/ManualCTRL_printer.git"
+REPO_URL="https://github.com/keyquesttech/ManualCTRL_printer.git"
 INSTALL_DIR="$HOME/ManualCTRL_printer"
 KLIPPER_DIR="$HOME/klipper"
 HOSTNAME="manualctrl"
