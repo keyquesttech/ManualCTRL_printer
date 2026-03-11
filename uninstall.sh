@@ -1,44 +1,65 @@
 #!/usr/bin/env bash
 #
-# ManualCTRL Printer Host – Uninstaller
+# ManualCTRL Printer Host – Full Uninstaller
+# Removes ManualCTRL, Klipper, build tools, and all related data.
+#
 # Usage:  chmod +x uninstall.sh && ./uninstall.sh
 #
 set -euo pipefail
 
 INSTALL_DIR="$HOME/ManualCTRL_printer"
-SERVICE_NAME="printer_host"
 
 echo "========================================="
 echo "  ManualCTRL Printer Host – Uninstaller"
 echo "========================================="
 echo ""
 
-# ── 1. Stop and remove systemd service ────────────────────
-echo "[1/4] Removing systemd service..."
-if systemctl list-unit-files | grep -q "$SERVICE_NAME"; then
-    sudo systemctl stop "$SERVICE_NAME" 2>/dev/null || true
-    sudo systemctl disable "$SERVICE_NAME" 2>/dev/null || true
-    sudo rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
-    sudo systemctl daemon-reload
-    echo "  Service removed."
-else
-    echo "  Service not found — skipping."
-fi
+# ── 1. Stop and remove ManualCTRL service ─────────────────
+echo "[1/6] Removing ManualCTRL service..."
+sudo systemctl stop printer_host 2>/dev/null || true
+sudo systemctl disable printer_host 2>/dev/null || true
+sudo rm -f /etc/systemd/system/printer_host.service
+echo "  ManualCTRL service removed."
 
-# ── 2. Remove Arduino CLI and its data ────────────────────
-echo "[2/4] Removing Arduino CLI..."
+# ── 2. Stop and remove Klipper services ──────────────────
+echo "[2/6] Removing Klipper (if installed)..."
+for svc in klipper moonraker; do
+    if systemctl list-unit-files 2>/dev/null | grep -q "$svc"; then
+        sudo systemctl stop "$svc" 2>/dev/null || true
+        sudo systemctl disable "$svc" 2>/dev/null || true
+        sudo rm -f "/etc/systemd/system/${svc}.service"
+        echo "  Removed $svc service."
+    fi
+done
+sudo systemctl daemon-reload
+
+rm -rf "$HOME/klipper"
+rm -rf "$HOME/klippy-env"
+rm -rf "$HOME/moonraker"
+rm -rf "$HOME/moonraker-env"
+rm -rf "$HOME/printer_data"
+rm -rf "$HOME/klipper_config"
+rm -rf "$HOME/klipper_logs"
+rm -rf "$HOME/gcode_files"
+rm -rf "$HOME/mainsail"
+rm -rf "$HOME/fluidd"
+rm -rf "$HOME/KlipperScreen"
+echo "  Klipper and related tools removed."
+
+# ── 3. Remove Arduino CLI and its data ───────────────────
+echo "[3/6] Removing Arduino CLI..."
 rm -f "$HOME/.local/bin/arduino-cli"
 rm -rf "$HOME/.arduino15"
 rm -rf "$HOME/Arduino"
 echo "  Arduino CLI removed."
 
-# ── 3. Remove PlatformIO data (if any from previous installs) ─
-echo "[3/4] Removing PlatformIO data..."
+# ── 4. Remove PlatformIO data ────────────────────────────
+echo "[4/6] Removing PlatformIO..."
 rm -rf "$HOME/.platformio"
-echo "  PlatformIO data removed."
+echo "  PlatformIO removed."
 
-# ── 4. Remove project directory ───────────────────────────
-echo "[4/4] Removing project files..."
+# ── 5. Remove ManualCTRL project directory ────────────────
+echo "[5/6] Removing project files..."
 if [ -d "$INSTALL_DIR" ]; then
     rm -rf "$INSTALL_DIR"
     echo "  Removed $INSTALL_DIR"
@@ -46,9 +67,21 @@ else
     echo "  Project directory not found — skipping."
 fi
 
+# ── 6. Clean up leftover configs ─────────────────────────
+echo "[6/6] Cleaning up..."
+rm -f "$HOME/firmware.bin"
+rm -rf "$HOME/gcode_logs"
+rm -f "$HOME/printer.cfg"
+rm -f "$HOME/printer.cfg.bak"
+echo "  Cleanup done."
+
 echo ""
 echo "  ┌─────────────────────────────────────────────────┐"
-echo "  │  ManualCTRL has been completely uninstalled.     │"
+echo "  │  Everything has been removed:                    │"
+echo "  │    - ManualCTRL service + project files          │"
+echo "  │    - Klipper / Moonraker / Mainsail / Fluidd    │"
+echo "  │    - Arduino CLI + STM32 board data              │"
+echo "  │    - PlatformIO data                             │"
 echo "  │                                                  │"
 echo "  │  To reinstall:                                   │"
 echo "  │    git clone https://github.com/keyquesttech/    │"
