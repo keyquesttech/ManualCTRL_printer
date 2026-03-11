@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 #
 # ManualCTRL Printer Host – single-command updater
-# Usage:  ./update.sh
-#
-# Pulls the latest code from GitHub, installs any new Python
-# dependencies, and restarts the service. Your local printer.cfg
-# (runtime config) is preserved — only code files are updated.
+# Usage:  ./update.sh            (host code only)
+#         ./update.sh --firmware  (also rebuild firmware)
 #
 set -euo pipefail
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_NAME="printer_host"
+BUILD_FW=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --firmware|-f) BUILD_FW=true ;;
+    esac
+done
 
 echo "═══════════════════════════════════════"
 echo "  ManualCTRL – Updater"
@@ -45,9 +49,37 @@ else
     echo "  WARNING: No venv found. Run install.sh first."
 fi
 
-# ── 3. Restart the service ──────────────────────────────────
+# ── 3. Rebuild firmware (optional) ──────────────────────────
 echo ""
-echo "[3/4] Restarting ${SERVICE_NAME}..."
+if $BUILD_FW; then
+    echo "[3/4] Rebuilding firmware..."
+    source "$INSTALL_DIR/venv/bin/activate"
+
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
+        PIO_ENV="pi"
+    else
+        PIO_ENV="default"
+    fi
+
+    cd "$INSTALL_DIR/firmware"
+    pio run -e "$PIO_ENV"
+
+    FW="$INSTALL_DIR/firmware/.pio/build/${PIO_ENV}/firmware.bin"
+    if [ -f "$FW" ]; then
+        cp "$FW" "$INSTALL_DIR/firmware.bin"
+        echo "  Firmware built → ~/ManualCTRL_printer/firmware.bin"
+        echo "  Flash: copy to SD card, insert into SKR, power cycle."
+    else
+        echo "  WARNING: Firmware build may have failed."
+    fi
+else
+    echo "[3/4] Firmware rebuild skipped (use --firmware to rebuild)"
+fi
+
+# ── 4. Restart the service ──────────────────────────────────
+echo ""
+echo "[4/4] Restarting ${SERVICE_NAME}..."
 if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
     sudo systemctl restart "$SERVICE_NAME"
     echo "  Service restarted."
@@ -59,10 +91,9 @@ else
     echo "    cd $INSTALL_DIR && source venv/bin/activate && python main.py"
 fi
 
-# ── 4. Done ─────────────────────────────────────────────────
+# ── Done ────────────────────────────────────────────────────
 echo ""
-echo "[4/4] Update complete!"
-echo ""
+echo "Update complete!"
 IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "?")
 HOSTNAME_LOCAL=$(hostname 2>/dev/null || echo "manualctrl")
 echo "  Web UI:  http://${HOSTNAME_LOCAL}.local:8000"

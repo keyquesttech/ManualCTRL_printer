@@ -140,7 +140,7 @@ class SerialManager:
         loop = asyncio.get_running_loop()
         try:
             await loop.run_in_executor(
-                None, self._serial.write, b"M112\n"
+                None, self._serial.write, b"ESTOP\n"
             )
             logger.warning("Emergency stop sent")
         except serial.SerialException:

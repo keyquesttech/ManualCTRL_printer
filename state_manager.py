@@ -99,6 +99,8 @@ class StateManager:
     def _parse_temps(self, line: str):
         try:
             for p in line.split():
+                if p.startswith("TT:"):
+                    continue
                 if p.startswith("T:"):
                     self.state.hotend_temp = float(p[2:])
         except (ValueError, IndexError):

@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 #
 # ManualCTRL Printer Host – single-command installer for Raspberry Pi
-# Usage:  curl -sSL <raw-url>/install.sh | bash
-#    or:  chmod +x install.sh && ./install.sh
+# Usage:  chmod +x install.sh && ./install.sh
 #
 set -euo pipefail
 
 REPO_URL="https://github.com/keyquesttech/ManualCTRL_printer.git"
 INSTALL_DIR="$HOME/ManualCTRL_printer"
-KLIPPER_DIR="$HOME/klipper"
 HOSTNAME="manualctrl"
 
 echo "========================================="
@@ -20,8 +18,8 @@ echo "[1/7] Updating system packages..."
 sudo apt-get update -y
 sudo apt-get upgrade -y
 sudo apt-get install -y python3 python3-pip python3-venv git \
-    build-essential libffi-dev libncurses-dev avrdude gcc-arm-none-eabi \
-    binutils-arm-none-eabi libnewlib-arm-none-eabi stm32flash \
+    build-essential libffi-dev \
+    gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
     avahi-daemon avahi-utils libnss-mdns
 
 # ── 2. Set hostname for mDNS (manualctrl.local) ─────────────
@@ -56,25 +54,38 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# ── 5. Klipper firmware compilation ─────────────────────────
-echo "[5/7] Building Klipper firmware for SKR Mini E3 V3.0..."
-if [ -d "$KLIPPER_DIR" ]; then
-    cd "$KLIPPER_DIR" && git pull
+# ── 5. Build custom firmware ────────────────────────────────
+echo "[5/7] Building ManualCTRL firmware for SKR Mini E3 V3.0..."
+pip install platformio
+
+ARCH=$(uname -m)
+if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
+    echo "  32-bit ARM detected — linking system ARM toolchain for PlatformIO"
+    TOOL_DIR="$HOME/.platformio/packages/toolchain-gccarmnoneeabi"
+    rm -rf "$TOOL_DIR"
+    mkdir -p "$(dirname "$TOOL_DIR")"
+    ln -sf /usr "$TOOL_DIR"
+    PIO_ENV="pi"
 else
-    git clone https://github.com/Klipper3d/klipper.git "$KLIPPER_DIR"
+    PIO_ENV="default"
 fi
-cd "$KLIPPER_DIR"
 
-cp "$INSTALL_DIR/klipper.config" .config
-make clean
-make -j"$(nproc)"
+cd "$INSTALL_DIR/firmware"
+pio run -e "$PIO_ENV"
 
-FIRMWARE_OUT="$KLIPPER_DIR/out/klipper.bin"
-if [ -f "$FIRMWARE_OUT" ]; then
-    cp "$FIRMWARE_OUT" "$INSTALL_DIR/firmware.bin"
-    echo "  Firmware built: $INSTALL_DIR/firmware.bin"
-    echo "  Copy firmware.bin to an SD card, rename to firmware.bin,"
-    echo "  insert into SKR Mini E3 V3.0, and power cycle the board."
+FIRMWARE_BIN="$INSTALL_DIR/firmware/.pio/build/${PIO_ENV}/firmware.bin"
+if [ -f "$FIRMWARE_BIN" ]; then
+    cp "$FIRMWARE_BIN" "$INSTALL_DIR/firmware.bin"
+    echo ""
+    echo "  ╔═══════════════════════════════════════════════════╗"
+    echo "  ║  Firmware built: ~/ManualCTRL_printer/firmware.bin║"
+    echo "  ║                                                   ║"
+    echo "  ║  To flash:                                        ║"
+    echo "  ║    1. Copy firmware.bin to an SD card              ║"
+    echo "  ║    2. Insert SD into the SKR Mini E3 V3.0         ║"
+    echo "  ║    3. Power cycle the board                       ║"
+    echo "  ╚═══════════════════════════════════════════════════╝"
+    echo ""
 else
     echo "  WARNING: Firmware build may have failed – check output above."
 fi

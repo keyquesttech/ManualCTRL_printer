@@ -1,0 +1,21 @@
+{
+  "build": {
+    "core": "stm32",
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DSTM32G0xx -DSTM32G0B1xx",
+    "f_cpu": "64000000L",
+    "mcu": "stm32g0b1vet6",
+    "product_line": "STM32G0B1xx",
+    "variant": "STM32G0xx/G0B1V(B-C-E)(I-T)"
+  },
+  "frameworks": ["arduino"],
+  "name": "BTT SKR Mini E3 V3.0 (STM32G0B1VET6)",
+  "upload": {
+    "maximum_ram_size": 147456,
+    "maximum_size": 524288,
+    "protocol": "stlink",
+    "protocols": ["stlink", "dfu", "jlink", "serial"]
+  },
+  "url": "https://www.bigtreetech.com/",
+  "vendor": "BigTreeTech"
+}

@@ -58,10 +58,6 @@ SECTION_SCHEMA: dict[str, dict[str, dict[str, Any]]] = {
         "max_extrude_only_distance": _float("Max Extrude-Only Distance (mm)"),
         "max_temp":                  _float("Max Temp (\u00b0C)", help="UI input limit for hotend target"),
     },
-    "homing": {
-        "z_lift_before_home": _float("Z Lift Before Home (mm)"),
-        "z_rest_after_home":  _float("Z Rest After Home (mm)"),
-    },
     "motion": {
         "y_feedrate": _float("Y Feedrate (deg/min)"),
         "y_step":     _float("Y Step (deg/tick)"),
@@ -82,9 +78,8 @@ SECTION_LABELS: dict[str, str] = {
     "machine":  "Machine Limits",
     "bed":      "Bed Rotation (80T:20T)",
     "extruder": "Extruder (Orbiter 2.0)",
-    "homing":   "Homing Sequence",
     "motion":   "Manual Control Defaults",
-    "macros":   "G-code Macros",
+    "macros":   "Command Macros",
 }
 
 
