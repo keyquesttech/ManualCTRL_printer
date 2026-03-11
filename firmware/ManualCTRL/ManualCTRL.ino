@@ -1,11 +1,18 @@
 #include <Arduino.h>
-#include "command_parser.h"
-#include "stepper_ctrl.h"
-#include "tmc_config.h"
-#include "temperature.h"
-#include "fans.h"
-#include "endstop.h"
-#include "safety.h"
+
+/* Forward declarations only — avoid including custom headers in .ino so STM32 toolchain parses setup/loop correctly */
+extern void initEndstops(void);
+extern void initFans(void);
+extern void initTemperature(void);
+extern void initTMC(void);
+extern void initSteppers(void);
+extern void initSafety(void);
+extern void processSerialCommands(void);
+extern void runSteppers(void);
+extern void updateTemperature(void);
+extern void updateHotendFan(float);
+extern float getHotendTemp(void);
+extern void checkSafety(void);
 
 void setup() {
     Serial.begin(115200);
