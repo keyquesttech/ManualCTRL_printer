@@ -119,7 +119,7 @@ pio run
 3. Wait for the board to flash (LED activity); the file may be renamed on the card.
 4. Power off, remove the SD card, power on again.
 
-**If USB does not enumerate** after flashing (e.g. no `/dev/ttyACM0`), the host can still be used with **Marlin** on the board: set Config → Firmware → **marlin**, then use the same UI with G-code.
+**If USB does not enumerate** after flashing (no `/dev/ttyACM0`, or `dmesg` shows “device not accepting address”, “error -71”, “unable to enumerate USB device”), the custom firmware’s USB init doesn’t work on this board with the current toolchain. Use **Marlin** on the SKR instead: flash a Marlin build for SKR Mini E3 V3.0, then in the host set Config → Firmware → **marlin**. The same web UI (motion, temp, fan, home) works over G-code.
 
 ## Configuration
 
@@ -128,6 +128,8 @@ All host-side settings are stored in `printer.cfg` (auto-created from `default_c
 | Section | What it controls |
 |---------|-----------------|
 | **Serial** | Port, baud rate |
+| **Firmware** | Type (marlin/custom), bed axis, invert directions (bed/Z/extruder) |
+| **Pins & Directions** | Pin names and direction inverts for **custom firmware** (step/dir/enable per axis, TMC, heater, fans, endstop). Used when you run **Build firmware**; change here then rebuild and reflash. |
 | **Machine** | Velocity/accel limits, Z max travel |
 | **Bed** | Gear ratio, rotation distance |
 | **Extruder** | Nozzle/filament diameters, cross-section limits, max temp |

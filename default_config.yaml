@@ -12,6 +12,10 @@ serial:
 firmware:
   type: marlin       # "marlin" = G-code (Marlin); "custom" = ManualCTRL MOV/STOP/TEMP
   marlin_bed_axis: B # Axis letter for bed rotation in Marlin (B or A)
+  # Invert direction so UI matches your wiring/Marlin (flip if controls move the wrong way)
+  invert_bed: false  # bed rotation
+  invert_z: false    # Z axis
+  invert_e: false   # extruder
 
 # ── Machine Limits (used to clamp UI-sent velocities) ──────
 machine:
@@ -45,6 +49,33 @@ motion:
   z_feedrate: 600              # mm/min — Z axis speed
   z_step: 0.1                  # mm per tick (unused in velocity mode)
   tick_hz: 15                  # state-change polling rate
+
+# ── Pins / hardware (custom firmware build; Marlin uses invert_* only at runtime)
+# Pin names: PA0–PA15, PB0–PB15, PC0–PC15, PD0–PD2 (STM32G0B1). Used when building custom firmware.
+pins:
+  bed_step: PB10
+  bed_dir: PB2
+  bed_enable: PB11
+  bed_dir_invert: false
+  z_step: PB0
+  z_dir: PC5
+  z_enable: PB1
+  z_dir_invert: false
+  e_step: PB3
+  e_dir: PB4
+  e_enable: PD2
+  e_dir_invert: false
+  tmc_rx: PC11
+  tmc_tx: PC10
+  tmc_bed_addr: 2
+  tmc_z_addr: 1
+  tmc_e_addr: 3
+  heater: PC8
+  thermistor: PA0
+  fan_part: PC6
+  fan_hotend: PC7
+  z_endstop: PC2
+  beeper: PB5
 
 # ── G-code Macros ──────────────────────────────────────────
 macros:

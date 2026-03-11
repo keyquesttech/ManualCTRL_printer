@@ -84,11 +84,16 @@ if $BUILD_FW; then
         fi
     fi
 
+    BASE_FLAGS="-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256"
+    PIN_FLAGS=""
+    if [ -f "$INSTALL_DIR/scripts/get_pin_build_flags.py" ]; then
+        PIN_FLAGS=$(cd "$INSTALL_DIR" && python3 scripts/get_pin_build_flags.py 2>/dev/null) || true
+    fi
     arduino-cli compile \
         --fqbn "$FQBN" \
         --build-property "build.flash_offset=0x2000" \
-        --build-property "compiler.c.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
-        --build-property "compiler.cpp.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+        --build-property "compiler.c.extra_flags=$BASE_FLAGS $PIN_FLAGS" \
+        --build-property "compiler.cpp.extra_flags=$BASE_FLAGS $PIN_FLAGS" \
         --output-dir "$INSTALL_DIR/firmware/build" \
         "$INSTALL_DIR/firmware/ManualCTRL"
 

@@ -47,6 +47,9 @@ class StreamEngine:
 
         self._firmware_type: str = "custom"  # "custom" | "marlin"
         self._marlin_bed_axis: str = "B"     # axis letter for bed in G1
+        self._marlin_invert_bed: bool = False
+        self._marlin_invert_z: bool = False
+        self._marlin_invert_e: bool = False
         self._marlin_sent_relative: bool = False  # G91 sent, need G90 when idle
 
     def apply_config(self, cfg):
@@ -74,6 +77,12 @@ class StreamEngine:
             self._firmware_type = "custom"
         axis = str(fw.get("marlin_bed_axis", "B")).strip().upper()
         self._marlin_bed_axis = axis if axis in ("A", "B") else "B"
+        def _bool_cfg(key: str) -> bool:
+            v = fw.get(key, False)
+            return v in (True, "true", "yes", "1", 1)
+        self._marlin_invert_bed = _bool_cfg("invert_bed")
+        self._marlin_invert_z = _bool_cfg("invert_z")
+        self._marlin_invert_e = _bool_cfg("invert_e")
 
         s = self.state.state
         s.y_feedrate = float(motion.get("y_feedrate", 2700))
@@ -191,6 +200,12 @@ class StreamEngine:
         step_b = y_dir * y_vel * dt
         step_z = z_dir * z_vel * dt
         step_e = e_dir * e_vel * dt
+        if self._marlin_invert_bed:
+            step_b = -step_b
+        if self._marlin_invert_z:
+            step_z = -step_z
+        if self._marlin_invert_e:
+            step_e = -step_e
 
         if y_dir != 0:
             await self.serial.send_gcode(f"G1 {self._marlin_bed_axis}{step_b:.4f} F{max(1, s.y_feedrate):.0f}")

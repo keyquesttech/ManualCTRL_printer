@@ -130,11 +130,18 @@ if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
 fi
 
 echo "  Compiling firmware..."
+BASE_FLAGS="-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256"
+PIN_FLAGS=""
+if [ -f "$INSTALL_DIR/scripts/get_pin_build_flags.py" ]; then
+    PIN_FLAGS=$(cd "$INSTALL_DIR" && python3 scripts/get_pin_build_flags.py 2>/dev/null) || true
+fi
+EXTRA_C="$BASE_FLAGS $PIN_FLAGS"
+EXTRA_CPP="$BASE_FLAGS $PIN_FLAGS"
 arduino-cli compile \
     --fqbn "$FQBN" \
     --build-property "build.flash_offset=0x2000" \
-    --build-property "compiler.c.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
-    --build-property "compiler.cpp.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+    --build-property "compiler.c.extra_flags=$EXTRA_C" \
+    --build-property "compiler.cpp.extra_flags=$EXTRA_CPP" \
     --output-dir "$INSTALL_DIR/firmware/build" \
     "$INSTALL_DIR/firmware/ManualCTRL"
 
