@@ -55,17 +55,11 @@ if $BUILD_FW; then
     echo "[3/4] Rebuilding firmware..."
     source "$INSTALL_DIR/venv/bin/activate"
 
-    ARCH=$(uname -m)
-    if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
-        PIO_ENV="pi"
-    else
-        PIO_ENV="default"
-    fi
-
     cd "$INSTALL_DIR/firmware"
-    pio run -e "$PIO_ENV"
+    source "$INSTALL_DIR/venv/bin/activate"
+    pio run
 
-    FW="$INSTALL_DIR/firmware/.pio/build/${PIO_ENV}/firmware.bin"
+    FW="$INSTALL_DIR/firmware/.pio/build/default/firmware.bin"
     if [ -f "$FW" ]; then
         cp "$FW" "$INSTALL_DIR/firmware.bin"
         echo "  Firmware built → ~/ManualCTRL_printer/firmware.bin"

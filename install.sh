@@ -60,20 +60,33 @@ pip install platformio
 
 ARCH=$(uname -m)
 if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
-    echo "  32-bit ARM detected — linking system ARM toolchain for PlatformIO"
+    echo "  32-bit ARM detected — setting up system ARM toolchain for PlatformIO"
     TOOL_DIR="$HOME/.platformio/packages/toolchain-gccarmnoneeabi"
     rm -rf "$TOOL_DIR"
-    mkdir -p "$(dirname "$TOOL_DIR")"
-    ln -sf /usr "$TOOL_DIR"
-    PIO_ENV="pi"
-else
-    PIO_ENV="default"
+    mkdir -p "$TOOL_DIR/bin"
+    cat > "$TOOL_DIR/package.json" <<'TJSON'
+{
+  "name": "toolchain-gccarmnoneeabi",
+  "version": "1.120301.0",
+  "description": "System ARM GCC toolchain",
+  "system": "*"
+}
+TJSON
+    for f in /usr/bin/arm-none-eabi-*; do
+        ln -sf "$f" "$TOOL_DIR/bin/"
+    done
+    if [ -d /usr/arm-none-eabi ]; then
+        ln -sf /usr/arm-none-eabi "$TOOL_DIR/arm-none-eabi"
+    fi
+    if [ -d /usr/lib/arm-none-eabi ]; then
+        ln -sf /usr/lib/arm-none-eabi "$TOOL_DIR/lib"
+    fi
 fi
 
 cd "$INSTALL_DIR/firmware"
-pio run -e "$PIO_ENV"
+pio run
 
-FIRMWARE_BIN="$INSTALL_DIR/firmware/.pio/build/${PIO_ENV}/firmware.bin"
+FIRMWARE_BIN="$INSTALL_DIR/firmware/.pio/build/default/firmware.bin"
 if [ -f "$FIRMWARE_BIN" ]; then
     cp "$FIRMWARE_BIN" "$INSTALL_DIR/firmware.bin"
     echo ""
