@@ -39,6 +39,7 @@ sudo apt-get upgrade -y
 sudo apt-get install -y \
     python3 python3-pip python3-venv \
     git curl \
+    gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
     avahi-daemon avahi-utils libnss-mdns
 
 # ── 2. Set hostname for mDNS (manualctrl.local) ─────────
@@ -96,6 +97,29 @@ arduino-cli core install STMicroelectronics:stm32
 echo "  Installing libraries..."
 arduino-cli lib install "TMCStepper"
 arduino-cli lib install "AccelStepper"
+
+# On 32-bit ARM Pi the xpack toolchain downloaded by Arduino CLI is an x86
+# binary that cannot execute.  Replace it with symlinks to the system's
+# arm-none-eabi-* tools which ARE native armhf binaries.
+ARCH=$(uname -m)
+if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
+    echo "  32-bit ARM detected — linking system ARM toolchain..."
+    XPACK_DIR=$(find "$HOME/.arduino15/packages/STMicroelectronics/tools/xpack-arm-none-eabi-gcc" \
+        -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -n1)
+    if [ -n "$XPACK_DIR" ] && [ -d "$XPACK_DIR" ]; then
+        rm -rf "$XPACK_DIR/bin"
+        mkdir -p "$XPACK_DIR/bin"
+        for f in /usr/bin/arm-none-eabi-*; do
+            ln -sf "$f" "$XPACK_DIR/bin/"
+        done
+        [ -d /usr/arm-none-eabi ] && ln -sfn /usr/arm-none-eabi "$XPACK_DIR/arm-none-eabi"
+        [ -d /usr/lib/arm-none-eabi ] && ln -sfn /usr/lib/arm-none-eabi "$XPACK_DIR/lib"
+        [ -d /usr/lib/gcc/arm-none-eabi ] && ln -sfn /usr/lib/gcc/arm-none-eabi "$XPACK_DIR/gcc"
+        echo "  System toolchain linked into Arduino CLI."
+    else
+        echo "  WARNING: Could not find xpack toolchain directory to patch."
+    fi
+fi
 
 echo "  Compiling firmware..."
 arduino-cli compile \

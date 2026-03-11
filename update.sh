@@ -63,6 +63,22 @@ if $BUILD_FW; then
     fi
 
     arduino-cli lib upgrade
+
+    # Patch xpack toolchain on 32-bit ARM (same as install.sh)
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
+        XPACK_DIR=$(find "$HOME/.arduino15/packages/STMicroelectronics/tools/xpack-arm-none-eabi-gcc" \
+            -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -n1)
+        if [ -n "$XPACK_DIR" ] && [ -d "$XPACK_DIR" ] && ! "$XPACK_DIR/bin/arm-none-eabi-gcc" --version &>/dev/null; then
+            echo "  Patching toolchain with system arm-none-eabi..."
+            rm -rf "$XPACK_DIR/bin"
+            mkdir -p "$XPACK_DIR/bin"
+            for f in /usr/bin/arm-none-eabi-*; do ln -sf "$f" "$XPACK_DIR/bin/"; done
+            [ -d /usr/arm-none-eabi ] && ln -sfn /usr/arm-none-eabi "$XPACK_DIR/arm-none-eabi"
+            [ -d /usr/lib/arm-none-eabi ] && ln -sfn /usr/lib/arm-none-eabi "$XPACK_DIR/lib"
+        fi
+    fi
+
     arduino-cli compile \
         --fqbn "$FQBN" \
         --build-property "build.flash_offset=0x2000" \
