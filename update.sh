@@ -8,6 +8,8 @@ set -euo pipefail
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_NAME="printer_host"
+ARDUINO_CLI_DIR="$HOME/.local/bin"
+FQBN="STMicroelectronics:stm32:GenG0:pnum=GENERIC_G0B1VETX,usb=CDCgen"
 BUILD_FW=false
 
 for arg in "$@"; do
@@ -52,14 +54,24 @@ fi
 # ── 3. Rebuild firmware (optional) ──────────────────────────
 echo ""
 if $BUILD_FW; then
-    echo "[3/4] Rebuilding firmware..."
-    source "$INSTALL_DIR/venv/bin/activate"
+    echo "[3/4] Rebuilding firmware with Arduino CLI..."
+    export PATH="$ARDUINO_CLI_DIR:$PATH"
 
-    cd "$INSTALL_DIR/firmware"
-    source "$INSTALL_DIR/venv/bin/activate"
-    pio run
+    if ! command -v arduino-cli &>/dev/null; then
+        echo "  ERROR: Arduino CLI not found. Run install.sh first."
+        exit 1
+    fi
 
-    FW="$INSTALL_DIR/firmware/.pio/build/default/firmware.bin"
+    arduino-cli lib upgrade
+    arduino-cli compile \
+        --fqbn "$FQBN" \
+        --build-property "build.flash_offset=0x2000" \
+        --build-property "compiler.c.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+        --build-property "compiler.cpp.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+        --output-dir "$INSTALL_DIR/firmware/build" \
+        "$INSTALL_DIR/firmware/ManualCTRL"
+
+    FW="$INSTALL_DIR/firmware/build/ManualCTRL.ino.bin"
     if [ -f "$FW" ]; then
         cp "$FW" "$INSTALL_DIR/firmware.bin"
         echo "  Firmware built → ~/ManualCTRL_printer/firmware.bin"

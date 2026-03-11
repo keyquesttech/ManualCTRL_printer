@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# ManualCTRL Printer Host – single-command installer for Raspberry Pi
+# ManualCTRL Printer Host – Clean installer for Raspberry Pi
+# Uses Arduino CLI to build firmware (works reliably on 32-bit ARM)
+#
 # Usage:  chmod +x install.sh && ./install.sh
 #
 set -euo pipefail
@@ -8,21 +10,39 @@ set -euo pipefail
 REPO_URL="https://github.com/keyquesttech/ManualCTRL_printer.git"
 INSTALL_DIR="$HOME/ManualCTRL_printer"
 HOSTNAME="manualctrl"
+ARDUINO_CLI_DIR="$HOME/.local/bin"
+FQBN="STMicroelectronics:stm32:GenG0:pnum=GENERIC_G0B1VETX,usb=CDCgen"
+STM32_BOARD_URL="https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json"
 
 echo "========================================="
 echo "  ManualCTRL Printer Host – Installer"
 echo "========================================="
 
-# ── 1. System packages ──────────────────────────────────────
+# ── 0. Clean previous installs ────────────────────────────
+echo ""
+echo "[0/7] Cleaning previous installation artifacts..."
+sudo systemctl stop printer_host 2>/dev/null || true
+sudo systemctl disable printer_host 2>/dev/null || true
+sudo rm -f /etc/systemd/system/printer_host.service
+sudo systemctl daemon-reload 2>/dev/null || true
+rm -rf "$HOME/.platformio"
+rm -rf "$HOME/.arduino15"
+rm -rf "$HOME/Arduino"
+rm -f "$ARDUINO_CLI_DIR/arduino-cli"
+echo "  Clean slate ready."
+
+# ── 1. System packages ──────────────────────────────────
+echo ""
 echo "[1/7] Updating system packages..."
 sudo apt-get update -y
 sudo apt-get upgrade -y
-sudo apt-get install -y python3 python3-pip python3-venv git \
-    build-essential libffi-dev \
-    gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
+sudo apt-get install -y \
+    python3 python3-pip python3-venv \
+    git curl \
     avahi-daemon avahi-utils libnss-mdns
 
-# ── 2. Set hostname for mDNS (manualctrl.local) ─────────────
+# ── 2. Set hostname for mDNS (manualctrl.local) ─────────
+echo ""
 echo "[2/7] Configuring hostname → ${HOSTNAME}.local ..."
 CURRENT_HOSTNAME=$(hostname)
 if [ "$CURRENT_HOSTNAME" != "$HOSTNAME" ]; then
@@ -37,56 +57,56 @@ sudo systemctl enable avahi-daemon
 sudo systemctl restart avahi-daemon
 echo "  mDNS active – reachable at http://${HOSTNAME}.local:8000"
 
-# ── 3. Clone the project ────────────────────────────────────
+# ── 3. Clone the project ────────────────────────────────
+echo ""
 echo "[3/7] Cloning project repository..."
-if [ -d "$INSTALL_DIR" ]; then
+if [ -d "$INSTALL_DIR/.git" ]; then
     echo "  Directory exists – pulling latest..."
     cd "$INSTALL_DIR" && git pull
 else
+    rm -rf "$INSTALL_DIR"
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 cd "$INSTALL_DIR"
 
-# ── 4. Python virtual environment ───────────────────────────
+# ── 4. Python virtual environment ───────────────────────
+echo ""
 echo "[4/7] Setting up Python virtual environment..."
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# ── 5. Build custom firmware ────────────────────────────────
+# ── 5. Build firmware with Arduino CLI ──────────────────
+echo ""
 echo "[5/7] Building ManualCTRL firmware for SKR Mini E3 V3.0..."
-pip install platformio
 
-ARCH=$(uname -m)
-if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
-    echo "  32-bit ARM detected — setting up system ARM toolchain for PlatformIO"
-    TOOL_DIR="$HOME/.platformio/packages/toolchain-gccarmnoneeabi"
-    rm -rf "$TOOL_DIR"
-    mkdir -p "$TOOL_DIR/bin"
-    cat > "$TOOL_DIR/package.json" <<'TJSON'
-{
-  "name": "toolchain-gccarmnoneeabi",
-  "version": "1.120301.0",
-  "description": "System ARM GCC toolchain",
-  "system": "*"
-}
-TJSON
-    for f in /usr/bin/arm-none-eabi-*; do
-        ln -sf "$f" "$TOOL_DIR/bin/"
-    done
-    if [ -d /usr/arm-none-eabi ]; then
-        ln -sf /usr/arm-none-eabi "$TOOL_DIR/arm-none-eabi"
-    fi
-    if [ -d /usr/lib/arm-none-eabi ]; then
-        ln -sf /usr/lib/arm-none-eabi "$TOOL_DIR/lib"
-    fi
-fi
+mkdir -p "$ARDUINO_CLI_DIR"
+export PATH="$ARDUINO_CLI_DIR:$PATH"
 
-cd "$INSTALL_DIR/firmware"
-pio run
+echo "  Installing Arduino CLI..."
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR="$ARDUINO_CLI_DIR" sh
 
-FIRMWARE_BIN="$INSTALL_DIR/firmware/.pio/build/default/firmware.bin"
+echo "  Adding STM32 board support (this may take a few minutes)..."
+arduino-cli config init --overwrite
+arduino-cli config add board_manager.additional_urls "$STM32_BOARD_URL"
+arduino-cli core update-index
+arduino-cli core install STMicroelectronics:stm32
+
+echo "  Installing libraries..."
+arduino-cli lib install "TMCStepper"
+arduino-cli lib install "AccelStepper"
+
+echo "  Compiling firmware..."
+arduino-cli compile \
+    --fqbn "$FQBN" \
+    --build-property "build.flash_offset=0x2000" \
+    --build-property "compiler.c.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+    --build-property "compiler.cpp.extra_flags=-DVECT_TAB_OFFSET=0x2000 -DSERIAL_RX_BUFFER_SIZE=256 -DSERIAL_TX_BUFFER_SIZE=256" \
+    --output-dir "$INSTALL_DIR/firmware/build" \
+    "$INSTALL_DIR/firmware/ManualCTRL"
+
+FIRMWARE_BIN="$INSTALL_DIR/firmware/build/ManualCTRL.ino.bin"
 if [ -f "$FIRMWARE_BIN" ]; then
     cp "$FIRMWARE_BIN" "$INSTALL_DIR/firmware.bin"
     echo ""
@@ -103,7 +123,7 @@ else
     echo "  WARNING: Firmware build may have failed – check output above."
 fi
 
-# ── 6. Systemd service ──────────────────────────────────────
+# ── 6. Systemd service ──────────────────────────────────
 echo "[6/7] Installing systemd service..."
 cd "$INSTALL_DIR"
 sudo cp printer_host.service /etc/systemd/system/printer_host.service
@@ -115,7 +135,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable printer_host.service
 sudo systemctl start printer_host.service
 
-# ── 7. Done ──────────────────────────────────────────────────
+# ── 7. Done ──────────────────────────────────────────────
 IP_ADDR=$(hostname -I | awk '{print $1}')
 echo ""
 echo "[7/7] Installation complete!"
@@ -129,5 +149,7 @@ echo "  │  Config:  http://${HOSTNAME}.local:8000/config  │"
 echo "  │                                                 │"
 echo "  │  Service: sudo systemctl status printer_host    │"
 echo "  │  Logs:    journalctl -u printer_host -f         │"
+echo "  │  Update:  ~/ManualCTRL_printer/update.sh        │"
+echo "  │  Remove:  ~/ManualCTRL_printer/uninstall.sh     │"
 echo "  └─────────────────────────────────────────────────┘"
 echo ""

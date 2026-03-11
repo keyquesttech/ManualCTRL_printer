@@ -11,6 +11,7 @@ printer.cfg.bak
 gcode_logs/
 firmware.bin
 firmware/.pio/
+firmware/build/
 .env
 *.swp
 *.swo

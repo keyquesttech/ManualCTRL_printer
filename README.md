@@ -19,7 +19,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-The installer handles everything: system packages, mDNS hostname, Python venv, firmware build (via PlatformIO), and systemd service.
+The installer handles everything: system packages, mDNS hostname, Python venv, firmware build (via Arduino CLI), and systemd service.
 
 After the firmware builds, flash it to the SKR board:
 1. Copy `firmware.bin` to an SD card
@@ -37,9 +37,17 @@ Then open:
 ~/ManualCTRL_printer/update.sh --firmware   # also rebuild firmware
 ```
 
+## Uninstalling
+
+```bash
+~/ManualCTRL_printer/uninstall.sh
+```
+
+Removes the systemd service, Arduino CLI, PlatformIO data, and the project directory.
+
 ## Custom Firmware
 
-The `firmware/` directory contains a PlatformIO project targeting the STM32G0B1 on the SKR Mini E3 V3.0. It replaces Klipper/Marlin with a purpose-built firmware that:
+The `firmware/ManualCTRL/` directory contains the Arduino sketch targeting the STM32G0B1 on the SKR Mini E3 V3.0. It replaces Klipper/Marlin with a purpose-built firmware that:
 
 - Drives 3 steppers (bed rotation, Z axis, extruder) via TMC2209 UART
 - Reads a 100K NTC thermistor and runs PID for the hotend heater
@@ -47,6 +55,8 @@ The `firmware/` directory contains a PlatformIO project targeting the STM32G0B1 
 - Reads the Z endstop for homing
 - Provides toggleable safety (thermal runaway, over-temperature)
 - Speaks a simple text protocol over USB serial
+
+The firmware builds with **Arduino CLI** on the Pi (no PlatformIO ARM issues) and also with **PlatformIO** on PC for development.
 
 ### Serial Protocol
 
@@ -76,6 +86,15 @@ python main.py
 
 Open `http://localhost:8000` in your browser.
 
+### Building firmware on PC (PlatformIO)
+
+```bash
+cd firmware
+pio run
+```
+
+The `platformio.ini` is configured to find sources in `ManualCTRL/`.
+
 ## Configuration
 
 All host-side settings are stored in `printer.cfg` (auto-created from `default_config.yaml` on first run). Edit via the web interface at `/config`.
@@ -92,19 +111,23 @@ All host-side settings are stored in `printer.cfg` (auto-created from `default_c
 ## Project Structure
 
 ```
-main.py              – FastAPI server, WebSocket, REST config API
-serial_manager.py    – Async serial communication with buffer tracking
-state_manager.py     – Machine state & controller response parsing
-stream_engine.py     – Velocity-mode engine: UI states → MOV/STOP commands
-kinematics.py        – Extruder params, volumetric flow calculations
-config_manager.py    – YAML config load/save/validate with schema
-gcode_logger.py      – Session command logging (toggle from UI)
-default_config.yaml  – Factory default configuration
-static/              – Web frontend (HTML, CSS, JS)
-firmware/            – PlatformIO project (custom STM32 firmware)
-install.sh           – One-command Raspberry Pi installer
-update.sh            – One-command updater (--firmware to rebuild)
-printer_host.service – systemd unit file
+main.py                  – FastAPI server, WebSocket, REST config API
+serial_manager.py        – Async serial communication with buffer tracking
+state_manager.py         – Machine state & controller response parsing
+stream_engine.py         – Velocity-mode engine: UI states → MOV/STOP commands
+kinematics.py            – Extruder params, volumetric flow calculations
+config_manager.py        – YAML config load/save/validate with schema
+gcode_logger.py          – Session command logging (toggle from UI)
+default_config.yaml      – Factory default configuration
+static/                  – Web frontend (HTML, CSS, JS)
+firmware/
+  ManualCTRL/            – Arduino sketch (custom STM32 firmware)
+  boards/                – PlatformIO custom board definition
+  platformio.ini         – PlatformIO config (for PC development)
+install.sh               – One-command Raspberry Pi installer
+update.sh                – One-command updater (--firmware to rebuild)
+uninstall.sh             – One-command uninstaller
+printer_host.service     – systemd unit file
 ```
 
 ## Architecture
