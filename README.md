@@ -92,14 +92,34 @@ python main.py
 
 Open `http://localhost:8000` in your browser.
 
-### Building firmware on PC (PlatformIO)
+### Building and flashing custom firmware
+
+**On Raspberry Pi (32-bit):** The installer builds the firmware automatically. To rebuild only:
+
+```bash
+cd ~/ManualCTRL_printer
+./update.sh --firmware
+# Output: firmware/build/ManualCTRL.ino.bin → copied to firmware.bin
+```
+
+If the build fails (e.g. toolchain or ctags), run the same toolchain and ctags setup as in `install.sh`, then run `./update.sh --firmware` again.
+
+**On PC (PlatformIO):**
 
 ```bash
 cd firmware
 pio run
+# Output: .pio/build/default/firmware.bin
 ```
 
-The `platformio.ini` is configured to find sources in `ManualCTRL/`.
+**Flashing the SKR Mini E3 V3.0:**
+
+1. Copy `firmware.bin` to a FAT32 SD card (root of the card).
+2. Insert the SD card into the SKR, power the board (USB or PSU).
+3. Wait for the board to flash (LED activity); the file may be renamed on the card.
+4. Power off, remove the SD card, power on again.
+
+**If USB does not enumerate** after flashing (e.g. no `/dev/ttyACM0`), the host can still be used with **Marlin** on the board: set Config → Firmware → **marlin**, then use the same UI with G-code.
 
 ## Configuration
 

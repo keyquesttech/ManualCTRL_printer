@@ -133,15 +133,14 @@ class SerialManager:
             except asyncio.CancelledError:
                 break
 
-    async def emergency_stop(self):
-        """Send M112 emergency stop bypassing the buffer."""
+    async def emergency_stop(self, cmd: str = "ESTOP"):
+        """Send emergency stop command immediately, bypassing the buffer."""
         if not self.connected:
             return
+        raw = (cmd.strip() + "\n").encode("ascii")
         loop = asyncio.get_running_loop()
         try:
-            await loop.run_in_executor(
-                None, self._serial.write, b"ESTOP\n"
-            )
-            logger.warning("Emergency stop sent")
+            await loop.run_in_executor(None, self._serial.write, raw)
+            logger.warning("Emergency stop sent: %s", cmd)
         except serial.SerialException:
             logger.error("Failed to send emergency stop")

@@ -253,7 +253,8 @@ async def handle_message(msg: dict):
             state_mgr.state.is_logging = False
 
     elif action == "emergency_stop":
-        await serial_mgr.emergency_stop()
+        estop_cmd = "M112" if cfg.get("firmware", "type", "custom") == "marlin" else "ESTOP"
+        await serial_mgr.emergency_stop(estop_cmd)
 
     elif action == "gcode":
         await engine.send_gcode_raw(msg.get("value", ""))

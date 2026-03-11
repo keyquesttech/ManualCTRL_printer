@@ -8,6 +8,11 @@ serial:
   port: /dev/ttyACM0
   baud_rate: 115200
 
+# ── Firmware (host sends this protocol) ─────────────────────
+firmware:
+  type: marlin       # "marlin" = G-code (Marlin); "custom" = ManualCTRL MOV/STOP/TEMP
+  marlin_bed_axis: B # Axis letter for bed rotation in Marlin (B or A)
+
 # ── Machine Limits (used to clamp UI-sent velocities) ──────
 machine:
   max_velocity: 200            # deg/s — bed rotation

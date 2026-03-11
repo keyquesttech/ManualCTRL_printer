@@ -38,6 +38,10 @@ SECTION_SCHEMA: dict[str, dict[str, dict[str, Any]]] = {
         "port":      _str("Serial Port", help="Device path or by-id symlink"),
         "baud_rate": _select("Baud Rate", [115200, 250000, 500000]),
     },
+    "firmware": {
+        "type": _select("Firmware", ["marlin", "custom"], help="marlin = G-code (Marlin); custom = ManualCTRL protocol"),
+        "marlin_bed_axis": _str("Marlin bed axis", help="Axis letter for bed rotation: A or B"),
+    },
     "machine": {
         "max_velocity":   _float("Max Velocity (mm/s)"),
         "max_accel":      _float("Max Acceleration (mm/s\u00b2)"),
@@ -75,6 +79,7 @@ SECTION_SCHEMA: dict[str, dict[str, dict[str, Any]]] = {
 
 SECTION_LABELS: dict[str, str] = {
     "serial":   "Serial Connection",
+    "firmware": "Firmware Type",
     "machine":  "Machine Limits",
     "bed":      "Bed Rotation (80T:20T)",
     "extruder": "Extruder (Orbiter 2.0)",

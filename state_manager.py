@@ -98,11 +98,19 @@ class StateManager:
 
     def _parse_temps(self, line: str):
         try:
+            # Custom firmware: "T:25.0" and optionally "TT:200.0" for target
+            # Marlin M105: "ok T:25.0 /200.0" — actual after T:, target after /
             for p in line.split():
                 if p.startswith("TT:"):
+                    self.state.hotend_target = float(p[3:])
                     continue
                 if p.startswith("T:"):
-                    self.state.hotend_temp = float(p[2:])
+                    rest = p[2:].strip()
+                    if rest:
+                        self.state.hotend_temp = float(rest)
+                    continue
+                if p.startswith("/") and len(p) > 1:
+                    self.state.hotend_target = float(p[1:])
         except (ValueError, IndexError):
             pass
 

@@ -8,9 +8,11 @@
 #include "safety.h"
 
 void setup() {
+    // Let USB VBUS and PHY stabilize before CDC init (helps enumeration on some boards)
+    delay(200);
+
     Serial.begin(115200);
-    while (!Serial && millis() < 3000)
-        ;
+    // Do not block on Serial — host connects when CDC enumerates
 
     initEndstops();
     initFans();
