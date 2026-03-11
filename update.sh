@@ -77,6 +77,11 @@ if $BUILD_FW; then
             [ -d /usr/arm-none-eabi ] && ln -sfn /usr/arm-none-eabi "$XPACK_DIR/arm-none-eabi"
             [ -d /usr/lib/arm-none-eabi ] && ln -sfn /usr/lib/arm-none-eabi "$XPACK_DIR/lib"
         fi
+        CTAGS_DIR="$HOME/.arduino15/packages/builtin/tools/ctags/5.8-arduino11"
+        if [ -d "$CTAGS_DIR" ] && [ -x /usr/bin/ctags ]; then
+            rm -f "$CTAGS_DIR/ctags"
+            ln -sf /usr/bin/ctags "$CTAGS_DIR/ctags"
+        fi
     fi
 
     arduino-cli compile \

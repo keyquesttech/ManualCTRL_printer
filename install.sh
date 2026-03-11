@@ -40,6 +40,7 @@ sudo apt-get install -y \
     python3 python3-pip python3-venv \
     git curl \
     gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi \
+    exuberant-ctags \
     avahi-daemon avahi-utils libnss-mdns
 
 # ── 2. Set hostname for mDNS (manualctrl.local) ─────────
@@ -118,6 +119,13 @@ if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
         echo "  System toolchain linked into Arduino CLI."
     else
         echo "  WARNING: Could not find xpack toolchain directory to patch."
+    fi
+    # Arduino CLI's builtin ctags is x86-only; use system ctags on 32-bit ARM.
+    CTAGS_DIR="$HOME/.arduino15/packages/builtin/tools/ctags/5.8-arduino11"
+    if [ -d "$CTAGS_DIR" ] && [ -x /usr/bin/ctags ]; then
+        rm -f "$CTAGS_DIR/ctags"
+        ln -sf /usr/bin/ctags "$CTAGS_DIR/ctags"
+        echo "  System ctags linked for Arduino CLI."
     fi
 fi
 
