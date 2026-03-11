@@ -8,6 +8,11 @@
     "product_line": "STM32G0B1xx",
     "variant": "STM32G0xx/G0B1V(B-C-E)(I-T)"
   },
+  "debug": {
+    "jlink_device": "STM32G0B1VE",
+    "openocd_target": "stm32g0x",
+    "svd_path": "STM32G0B1.svd"
+  },
   "frameworks": ["arduino"],
   "name": "BTT SKR Mini E3 V3.0 (STM32G0B1VET6)",
   "upload": {
