@@ -10,6 +10,12 @@ Provides real-time manual control via hold-to-move buttons, temperature manageme
 - **Python 3.9+** (Bookworm ships with 3.11)
 - **BTT SKR Mini E3 V3.0** (STM32G0B1) connected via USB
 
+## One-line install (Raspberry Pi OS Lite 32-bit)
+
+```bash
+cd ~ && rm -rf ManualCTRL_printer && git clone https://github.com/keyquesttech/ManualCTRL_printer.git && cd ManualCTRL_printer && chmod +x install.sh && ./install.sh
+```
+
 ## Quick Install (Raspberry Pi)
 
 ```bash
