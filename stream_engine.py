@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import asyncio
 import logging
+from typing import Optional
 
 from serial_manager import SerialManager
 from state_manager import StateManager
@@ -29,9 +32,9 @@ class StreamEngine:
         self.bed_gear_ratio: float = 4.0
         self.bed_rotation_distance: float = 90.0
 
-        self._task: asyncio.Task | None = None
+        self._task: Optional[asyncio.Task] = None
         self._running = False
-        self._temp_poll_task: asyncio.Task | None = None
+        self._temp_poll_task: Optional[asyncio.Task] = None
 
     def apply_config(self, cfg):
         machine = cfg.get_section("machine")

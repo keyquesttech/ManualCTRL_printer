@@ -5,6 +5,8 @@ When active, every command sent to the printer (except temperature polling)
 is written to a timestamped .gcode file inside the gcode_logs/ directory.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from pathlib import Path
